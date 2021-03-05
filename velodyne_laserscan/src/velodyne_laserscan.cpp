@@ -41,8 +41,6 @@ VelodyneLaserScan::VelodyneLaserScan(ros::NodeHandle &nh, ros::NodeHandle &nh_pr
 {
   ros::SubscriberStatusCallback connect_cb = boost::bind(&VelodyneLaserScan::connectCb, this);
   pub_ = nh.advertise<sensor_msgs::LaserScan>("scan", 10, connect_cb, connect_cb);
-  // KELVINKANG
-  pub_multi_echo_ = nh.advertise<sensor_msgs::MultiEchoLaserScan>("echoes", 10, true);
 
   srv_.setCallback(boost::bind(&VelodyneLaserScan::reconfig, this, _1, _2));
 }
@@ -169,8 +167,8 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
   // Construct LaserScan message
   if ((offset_x >= 0) && (offset_y >= 0) && (offset_r >= 0))
   {
-    // KELVINKANG
-    const float RESOLUTION = 0.00349066; // std::abs(cfg_.resolution);
+    // KELVINKANG 0.00349066
+    const float RESOLUTION = 0.00349066; //std::abs(cfg_.resolution);
     const size_t SIZE = 2.0 * M_PI / RESOLUTION;
     sensor_msgs::LaserScanPtr scan(new sensor_msgs::LaserScan());
     scan->header = msg->header;
@@ -183,30 +181,12 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
     scan->time_increment = scan->scan_time / SIZE;
     scan->ranges.resize(SIZE, INFINITY);
 
-    sensor_msgs::MultiEchoLaserScan multi_echo_scan;
-    multi_echo_scan.header = msg->header;
-    multi_echo_scan.angle_increment = RESOLUTION;
-    multi_echo_scan.angle_min = -M_PI;
-    multi_echo_scan.angle_max = M_PI;
-    multi_echo_scan.range_min = 0.4;
-    multi_echo_scan.range_max = 130.0;
-    multi_echo_scan.scan_time = 0.1;
-    multi_echo_scan.time_increment = multi_echo_scan.scan_time / SIZE;
-    sensor_msgs::LaserEcho echo;
-    echo.echoes.push_back(INFINITY);
-    multi_echo_scan.ranges.resize(SIZE, echo);
-
     if ((offset_x == 0) &&
         (offset_y == 4) &&
         (offset_i % 4 == 0) &&
         (offset_r % 4 == 0))
     {
       scan->intensities.resize(SIZE);
-
-      // KELVINKANG
-      sensor_msgs::LaserEcho intensity;
-      intensity.echoes.push_back(0);
-      multi_echo_scan.intensities.resize(SIZE, intensity);
 
       const size_t X = 0;
       const size_t Y = 1;
@@ -225,13 +205,7 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
 
           if ((bin >= 0) && (bin < static_cast<int>(SIZE)))
           {
-            // KELVINKANG
-            float range = sqrtf(x * x + y * y);
-
-            multi_echo_scan.ranges[bin].echoes[0] = range;
-            multi_echo_scan.intensities[bin].echoes[0] = i;
-
-            scan->ranges[bin] = range;
+            scan->ranges[bin] = sqrtf(x * x + y * y);
             scan->intensities[bin] = i;
           }
         }
@@ -244,11 +218,6 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
       if (offset_i >= 0)
       {
         scan->intensities.resize(SIZE);
-
-        // KELVINKANG
-        sensor_msgs::LaserEcho intensity;
-        intensity.echoes.push_back(0);
-        multi_echo_scan.intensities.resize(SIZE, intensity);
 
         sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_r(*msg, "ring");
         sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
@@ -267,13 +236,7 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
 
             if ((bin >= 0) && (bin < static_cast<int>(SIZE)))
             {
-              // KELVINKANG
-              float range = sqrtf(x * x + y * y);
-
-              multi_echo_scan.ranges[bin].echoes[0] = range;
-              multi_echo_scan.intensities[bin].echoes[0] = i;
-
-              scan->ranges[bin] = range;
+              scan->ranges[bin] = sqrtf(x * x + y * y);
               scan->intensities[bin] = i;
             }
           }
@@ -297,21 +260,14 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
 
             if ((bin >= 0) && (bin < static_cast<int>(SIZE)))
             {
-              // KELVINKANG
-              float range = sqrtf(x * x + y * y);
-
-              multi_echo_scan.ranges[bin].echoes[0] = range;
-
-              scan->ranges[bin] = range;
+              scan->ranges[bin] = sqrtf(x * x + y * y);
             }
           }
         }
       }
     }
 
-    // KELVINKANG
     pub_.publish(scan);
-    pub_multi_echo_.publish(multi_echo_scan);
   }
   else
   {

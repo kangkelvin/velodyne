@@ -36,8 +36,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/MultiEchoLaserScan.h>
-#include <sensor_msgs/LaserEcho.h>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
@@ -60,7 +58,7 @@ private:
 
   ros::NodeHandle nh_;
   ros::Subscriber sub_;
-  ros::Publisher pub_, pub_multi_echo_;
+  ros::Publisher pub_;
 
   VelodyneLaserScanConfig cfg_;
   dynamic_reconfigure::Server<VelodyneLaserScanConfig> srv_;
